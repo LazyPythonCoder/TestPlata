@@ -1,3 +1,4 @@
+
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 
@@ -95,16 +96,15 @@ void loop() {
     if (ledred == 0) {
       Serial.println("Led red passed");
       redcheckedLed = true;
-      lcd.print("Red led checked");
+      lcd.print("Red led checked ");
     } else {
       Serial.println("Led red failed");
-      lcd.print("Red led failed");
+      lcd.print("Red led failed  ");
     }
 
     Serial.println(rawValueLD1 * (5.0 / 1023.0));
     Serial.println(rawValueLD2 * (5.0 / 1023.0));
     Serial.println(rawValueLD3 * (5.0 / 1023.0));
-    Serial.println(rawValueLD);
     voltageLD = rawValueLD * (5.0 / 1023.0);
     lcd.setCursor(0, 1);
     lcd.print("voltageLD=");
@@ -155,4 +155,3 @@ float average(int a, int b, int c) {
   }
   return closest;
 }
-
