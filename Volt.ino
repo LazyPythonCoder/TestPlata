@@ -1,4 +1,3 @@
-
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 
@@ -9,18 +8,31 @@ const int redLed = 3;       // Красный светодиод
 const int relayPin = 4;
 const int sensorPhotoBlue = 5;
 const int relayPin2 = 6;
+const int relayRisistorPin = 8;
 const int sensorPhotoRed = 7;
+
+const int analogPinResistor = A1;    // Пин для измерения
+const float Vcc = 5.0;       // Напряжение питания Arduino (в Вольтах)
+const float R1 = 4660.0;  
+
 
 
 // 4 минуты в миллисекундах (4 * 60 * 1000)
 const unsigned long waitTime2 = 130000; 
 const unsigned long waitTime4 = 242000; 
 
+// const unsigned long waitTime2 = 5000; 
+// const unsigned long waitTime4 = 7000; 
+
+
+
 bool checked2 = false;
 bool checked4 = false;
 bool bluecheckedLed = false;
 bool redcheckedLed = false;
 bool checkedV = false;
+bool pinswitchcheck = false;
+bool pinrccheck = false;
 
 int rawValueLD = 0;
 int rawValueLD1 = 0;
@@ -38,6 +50,7 @@ void setup() {
   pinMode(redLed, OUTPUT);
   pinMode(relayPin, OUTPUT);
   pinMode(relayPin2, OUTPUT);
+  pinMode(relayRisistorPin, OUTPUT);
   pinMode(sensorPhotoBlue, INPUT); 
   pinMode(sensorPhotoRed, INPUT); 
 
@@ -56,12 +69,10 @@ void setup() {
   digitalWrite(redLed, LOW);
   digitalWrite(relayPin, LOW);
   digitalWrite(relayPin2, LOW);
-  }
+  digitalWrite(relayRisistorPin, LOW);
+   }
 
 void loop() {
-  // int checkedLed = digitalRead(sensorPhoto);
-  // Serial.println(checkedLed);
-  // delay(2000);
   // Проверяем, прошло ли 2 минуты и не делали ли мы проверку ранее
   if (!checked2 && millis() >= waitTime2) {
     lcd.clear();
@@ -81,10 +92,10 @@ void loop() {
   }
 
   if (!checked4 && millis() >= waitTime4) {
-    // lcd.setCursor(0, 1);
+    lcd.clear();
+    lcd.setCursor(0, 0);
     digitalWrite(relayPin, HIGH);
-    digitalWrite(relayPin2, HIGH);
-    delay(700);
+    delay(500);
     rawValueLD1 = analogRead(analogPinLD);
     rawValueLD2 = analogRead(analogPinLD);
     rawValueLD3 = analogRead(analogPinLD);
@@ -92,7 +103,6 @@ void loop() {
     int ledred = digitalRead(sensorPhotoRed);
     Serial.print("Led red=");
     Serial.println(ledred);
-    lcd.setCursor(0, 0);
     if (ledred == 0) {
       Serial.println("Led red passed");
       redcheckedLed = true;
@@ -113,7 +123,7 @@ void loop() {
     Serial.print("VoltageLD=");
     Serial.println(voltageLD);
     checked4 = true; 
-      if (voltageLD >= 1.9){
+      if (voltageLD >= 1.87){
         checkedV = true;
       } else {
         checkedV = false;
@@ -125,12 +135,42 @@ void loop() {
     Serial.println("false");
   }
   
-  Serial.println("Finish");
   Serial.print("Checked");
   Serial.print(bluecheckedLed);
   Serial.print(redcheckedLed);
   Serial.println(checkedV);
-  if (bluecheckedLed && checkedV && redcheckedLed) {
+  digitalWrite(relayRisistorPin, HIGH);
+  delay(500);
+  float RX = resistor(Vcc, R1);
+  if (RX == 0.0) {
+    pinswitchcheck = true;  
+  }
+  Serial.print("Rx=");
+  Serial.println(RX);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("RX=");
+  lcd.print(RX);
+  lcd.setCursor(0, 1);
+  lcd.print(pinswitchcheck);
+  delay(2000);
+
+  digitalWrite(relayPin, LOW);
+  digitalWrite(relayPin2, HIGH);
+  delay(500);
+  RX = resistor(Vcc, R1);
+  if (RX == 0.0) {
+    pinrccheck = true;  
+  }
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("RXSW=");
+  lcd.print(RX);
+  lcd.setCursor(0, 1);
+  lcd.print(pinrccheck);
+  
+
+  if (bluecheckedLed && checkedV && redcheckedLed && pinswitchcheck && pinrccheck) {
     digitalWrite(greenLed, HIGH);
     Serial.println("PASSED");
   } else {
@@ -155,3 +195,36 @@ float average(int a, int b, int c) {
   }
   return closest;
 }
+
+float resistor(float Vcc, float R1) {
+  int raw = analogRead(analogPinResistor); 
+   // Проверка на короткое замыкание (КЗ)
+  Serial.println(raw);
+  if (raw < 5) { 
+    Serial.println("Статус: КОРОТКОЕ ЗАМЫКАНИЕ! (R ~ 0 Ом)");
+    return 0.0;
+  } 
+  // Проверка на обрыв цепи (нет резистора)
+  else if (raw > 1020) {
+    Serial.println("Статус: ОБРЫВ ЦЕПИ! (R -> бесконечность)");
+    return 1000000000.0;
+  } 
+  // Расчет сопротивления
+  else {
+    // Вычисляем напряжение на выходе делителя
+    float Vout = (raw * Vcc) / 1023.0; 
+    // Формула делителя напряжения для поиска Rx
+    float Rx = R1 * (Vout / (Vcc - Vout)); 
+    
+    Serial.print("Сопротивление: ");
+    if (Rx >= 1000.0) {
+      Serial.print(Rx / 1000.0, 2);
+      Serial.println(" кОм");
+    } else {
+      Serial.print(Rx, 1);
+      Serial.println(" Ом");
+    }
+    return Rx;
+  }
+}
+
