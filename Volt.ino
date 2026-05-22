@@ -177,6 +177,23 @@ void loop() {
     digitalWrite(redLed, HIGH);
     Serial.println("FAILED");
   } 
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("BD=");
+  lcd.print(bluecheckedLed);
+  lcd.print(",VCH=");
+  lcd.print(checkedV);
+  lcd.print(",");
+  lcd.print(voltageLD);
+  lcd.setCursor(0, 1);
+  lcd.print("RD=");
+  lcd.print(redcheckedLed);
+  lcd.print(",SW=");
+  lcd.print(pinswitchcheck);
+  lcd.print(",RC=");
+  lcd.print(pinrccheck);
+
     }
 }
 
@@ -227,4 +244,3 @@ float resistor(float Vcc, float R1) {
     return Rx;
   }
 }
-
