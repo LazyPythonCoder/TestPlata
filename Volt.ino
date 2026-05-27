@@ -10,6 +10,8 @@ const int sensorPhotoBlue = 5;
 const int relayPin2 = 6;
 const int relayRisistorPin = 8;
 const int sensorPhotoRed = 7;
+const int relayGraundResistor = 9;
+const int BUTTON_PIN = 10;
 
 const int analogPinResistor = A1;    // Пин для измерения
 const float Vcc = 5.0;       // Напряжение питания Arduino (в Вольтах)
@@ -18,8 +20,8 @@ const float R1 = 4660.0;
 
 
 // 4 минуты в миллисекундах (4 * 60 * 1000)
-const unsigned long waitTime2 = 130000; 
-const unsigned long waitTime4 = 242000; 
+int unsigned long waitTime2 = 130000; 
+int unsigned long waitTime4 = 240000; 
 
 // const unsigned long waitTime2 = 5000; 
 // const unsigned long waitTime4 = 7000; 
@@ -53,23 +55,35 @@ void setup() {
   pinMode(relayRisistorPin, OUTPUT);
   pinMode(sensorPhotoBlue, INPUT); 
   pinMode(sensorPhotoRed, INPUT); 
-
+  pinMode(relayGraundResistor, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP); 
+  delay(50);
+  
   lcd.init();           // Инициализация дисплея
   lcd.backlight();      // Включаем подсветку
   
   lcd.clear();
   lcd.setCursor(0, 0);  // Устанавливаем курсор (столбец 0, строка 0)
-  lcd.print("TEST START"); 
+  lcd.print("TEST START");
+  lcd.setCursor(0, 1);  // Переходим на вторую строку 
   
-  lcd.setCursor(0, 1);  // Переходим на вторую строку
-  lcd.print("Arduino I2C LCD");
-    
+  if (digitalRead(BUTTON_PIN) == LOW) { //Кнопка нажата
+     lcd.print("M2, Time=");
+     waitTime2 = 130000/2; 
+     waitTime4 = 240000/2;
+     lcd.print(waitTime4/60000);
+  } else {                            //Кнопка не нажаты
+    lcd.print("M1, Time=");
+    lcd.print(waitTime4/60000);
+  }
+     
   // Сначала выключаем оба светодиода
   digitalWrite(greenLed, LOW);
   digitalWrite(redLed, LOW);
   digitalWrite(relayPin, LOW);
   digitalWrite(relayPin2, LOW);
   digitalWrite(relayRisistorPin, LOW);
+  digitalWrite(relayGraundResistor, LOW);
    }
 
 void loop() {
@@ -95,6 +109,7 @@ void loop() {
     lcd.clear();
     lcd.setCursor(0, 0);
     digitalWrite(relayPin, HIGH);
+    digitalWrite(relayGraundResistor, HIGH);
     delay(500);
     rawValueLD1 = analogRead(analogPinLD);
     rawValueLD2 = analogRead(analogPinLD);
@@ -123,7 +138,7 @@ void loop() {
     Serial.print("VoltageLD=");
     Serial.println(voltageLD);
     checked4 = true; 
-      if (voltageLD >= 1.87){
+      if (voltageLD >= 1.92){
         checkedV = true;
       } else {
         checkedV = false;
@@ -244,3 +259,4 @@ float resistor(float Vcc, float R1) {
     return Rx;
   }
 }
+
