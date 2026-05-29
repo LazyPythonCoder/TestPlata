@@ -5,17 +5,17 @@
 const int analogPinLD = A2; // Пин для проверки напряжения
 const int greenLed = 2;     // Зеленый светодиод
 const int redLed = 3;       // Красный светодиод
-const int relayPin = 4;
-const int sensorPhotoBlue = 5;
-const int relayPin2 = 6;
-const int relayRisistorPin = 8;
-const int sensorPhotoRed = 7;
-const int relayGraundResistor = 9;
-const int BUTTON_PIN = 10;
+const int relayPin = 4; // Пин реле 1 для соедениния концевого выключателя
+const int sensorPhotoBlue = 5; // Пин для подключения фоторезистора синего
+const int relayPin2 = 6; // Пин реле 2 соединяет 3.3 вольта ардуино с разъемом rc платы
+const int relayRisistorPin = 8; // Пин реле 3 соединяет  минус выхода взрывателя платы c минусом резистивного делителя она общая точка А1 
+const int sensorPhotoRed = 7; // Пин для подключение фоторезистора красного
+const int relayGraundResistor = 9; // Пин реле 4 соединяет землю через резистор 20кОм со входом A2 ардуино. Необходимо для точного показания напряжения при обрыва соеденения. 
+const int BUTTON_PIN = 10; // Пин кнопки для переключения режимов работы
 
 const int analogPinResistor = A1;    // Пин для измерения
 const float Vcc = 5.0;       // Напряжение питания Arduino (в Вольтах)
-const float R1 = 4660.0;  
+const float R1 = 4660.0;  // Сопротивление резисторого известного резистивного делителя
 
 
 
@@ -72,12 +72,12 @@ void setup() {
      waitTime2 = 130000/2; 
      waitTime4 = 240000/2;
      lcd.print(waitTime4/60000);
-  } else {                            //Кнопка не нажаты
+  } else {                            //Кнопка не нажата
     lcd.print("M1, Time=");
     lcd.print(waitTime4/60000);
   }
      
-  // Сначала выключаем оба светодиода
+  // Сначала выключаем оба светодиода и выключаем все реле(переводим их в разрыв)
   digitalWrite(greenLed, LOW);
   digitalWrite(redLed, LOW);
   digitalWrite(relayPin, LOW);
@@ -91,7 +91,7 @@ void loop() {
   if (!checked2 && millis() >= waitTime2) {
     lcd.clear();
     lcd.setCursor(0, 0);
-    int led = digitalRead(sensorPhotoBlue);
+    int led = digitalRead(sensorPhotoBlue); // Проверяем горит ли синий светодиод
     Serial.println(led);
     
     if (led == 0) {
@@ -105,19 +105,20 @@ void loop() {
     checked2 = true;
   }
 
-  if (!checked4 && millis() >= waitTime4) {
+  if (!checked4 && millis() >= waitTime4) {  // Если прошло 4 мин и не делали мы ранее то 
     lcd.clear();
     lcd.setCursor(0, 0);
     digitalWrite(relayPin, HIGH);
     digitalWrite(relayGraundResistor, HIGH);
     delay(500);
+    // Проверяем напряжение 3 раза и выбираем среднее значение
     rawValueLD1 = analogRead(analogPinLD);
     rawValueLD2 = analogRead(analogPinLD);
     rawValueLD3 = analogRead(analogPinLD);
     rawValueLD = average(rawValueLD1, rawValueLD2, rawValueLD3);
-    int ledred = digitalRead(sensorPhotoRed);
+    int ledred = digitalRead(sensorPhotoRed); // считываем данные фоторезитора (0-включен, 1-выключен)
     Serial.print("Led red=");
-    Serial.println(ledred);
+    Serial.println(ledred); 
     if (ledred == 0) {
       Serial.println("Led red passed");
       redcheckedLed = true;
@@ -130,7 +131,7 @@ void loop() {
     Serial.println(rawValueLD1 * (5.0 / 1023.0));
     Serial.println(rawValueLD2 * (5.0 / 1023.0));
     Serial.println(rawValueLD3 * (5.0 / 1023.0));
-    voltageLD = rawValueLD * (5.0 / 1023.0);
+    voltageLD = rawValueLD * (5.0 / 1023.0); // Переводим значение в вольты
     lcd.setCursor(0, 1);
     lcd.print("voltageLD=");
     lcd.print(voltageLD);
@@ -138,7 +139,7 @@ void loop() {
     Serial.print("VoltageLD=");
     Serial.println(voltageLD);
     checked4 = true; 
-      if (voltageLD >= 1.92){
+      if (voltageLD >= 1.92){ // Проверяем что значение напржения ны выходе взрывателя платы больше 1.92 вольта
         checkedV = true;
       } else {
         checkedV = false;
@@ -156,7 +157,7 @@ void loop() {
   Serial.println(checkedV);
   digitalWrite(relayRisistorPin, HIGH);
   delay(500);
-  float RX = resistor(Vcc, R1);
+  float RX = resistor(Vcc, R1);// Находим сопротивление на пине А1 ардуино. Необходимо для проверки того факта, что при замыкании концевика (реле1) или подаче 3.3 В минусовой разъем выхода взрывателя подключен к земле
   if (RX == 0.0) {
     pinswitchcheck = true;  
   }
@@ -170,10 +171,10 @@ void loop() {
   lcd.print(pinswitchcheck);
   delay(2000);
 
-  digitalWrite(relayPin, LOW);
-  digitalWrite(relayPin2, HIGH);
+  digitalWrite(relayPin, LOW); // размыкаем концевик
+  digitalWrite(relayPin2, HIGH); // Подаем 3.3 В на разъем rc разъем 
   delay(500);
-  RX = resistor(Vcc, R1);
+  RX = resistor(Vcc, R1); // Проверяем что при подаче 3.3 вольта сопротивление между минусом разъема взрывателя и землей имеет значение близкое к 0. В резистивном делителя это сопротивлепние есть неизвестное сопротивление
   if (RX == 0.0) {
     pinrccheck = true;  
   }
@@ -259,4 +260,3 @@ float resistor(float Vcc, float R1) {
     return Rx;
   }
 }
-
