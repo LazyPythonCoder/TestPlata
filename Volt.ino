@@ -68,13 +68,15 @@ void setup() {
   lcd.setCursor(0, 1);  // Переходим на вторую строку 
   
   if (digitalRead(BUTTON_PIN) == LOW) { //Кнопка нажата
-     lcd.print("M2, Time=");
-     waitTime2 = 130000/2; 
-     waitTime4 = 240000/2;
-     lcd.print(waitTime4/60000);
+    lcd.print("M2, Time=");
+    waitTime2 = 130000/2; 
+    waitTime4 = 240000/2;
+    lcd.print(waitTime4/60000);
+    lcd.print(" min");
   } else {                            //Кнопка не нажата
     lcd.print("M1, Time=");
     lcd.print(waitTime4/60000);
+    lcd.print(" min");
   }
      
   // Сначала выключаем оба светодиода и выключаем все реле(переводим их в разрыв)
